@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AIoT Depression Risk & Subtype Monitoring Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="dashboard-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">
+          <i class="fa-solid fa-brain-circuit"></i>
+        </div>
+        <div class="brand-text">
+          <h2>AIoT Monitor</h2>
+          <span>Depression Subtype AI</span>
+        </div>
+      </div>
+
+      <nav class="nav-menu">
+        <a href="#overview" class="nav-item active" data-tab="overview">
+          <i class="fa-solid fa-chart-pie"></i>
+          <span>Overview</span>
+        </a>
+        <a href="#subtypes" class="nav-item" data-tab="subtypes">
+          <i class="fa-solid fa-diagram-project"></i>
+          <span>Depression Types</span>
+        </a>
+        <a href="#sensors" class="nav-item" data-tab="sensors">
+          <i class="fa-solid fa-heart-pulse"></i>
+          <span>Sensors Live</span>
+        </a>
+        <a href="#risk" class="nav-item" data-tab="risk">
+          <i class="fa-solid fa-shield-virus"></i>
+          <span>AI Risk & SHAP</span>
+        </a>
+        <a href="#bench" class="nav-item" data-tab="bench">
+          <i class="fa-solid fa-sliders"></i>
+          <span>Subtype Simulator</span>
+        </a>
+        <a href="#alerts" class="nav-item" data-tab="alerts">
+          <i class="fa-solid fa-bell"></i>
+          <span>Clinical Alerts</span>
+          <span class="badge" id="alertBadge">3</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="device-status">
+          <span class="pulse-indicator"></span>
+          <div>
+            <strong>ESP32 Node (0x01)</strong>
+            <p id="deviceStatusText">Connected • Live Stream</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Top Header -->
+      <header class="top-header">
+        <div class="header-left">
+          <button class="mobile-nav-toggle" id="mobileMenuBtn" aria-label="Toggle Navigation">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <div class="header-title">
+            <h1 id="pageTitle">Live Overview & Depression Subtype Diagnosis</h1>
+            <p>Multi-sensor physiological analytics & DSM-5 based AI depression classification</p>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <div class="quick-stat">
+            <span class="stat-dot green"></span>
+            <span>Inference Model: <strong>XGBoost + Clinical Heuristics</strong></span>
+          </div>
+          <button class="btn-primary" id="btnSimulate">
+            <i class="fa-solid fa-rotate"></i> Re-evaluate Patient
+          </button>
+        </div>
+      </header>
+
+      <!-- Content Views -->
+      <div class="content-body">
+        
+        <!-- SECTION 1: OVERVIEW -->
+        <section id="section-overview" class="tab-section active">
+          <!-- KPI Cards -->
+          <div class="kpi-grid">
+            <div class="kpi-card card-hr">
+              <div class="kpi-icon"><i class="fa-solid fa-heart-pulse"></i></div>
+              <div class="kpi-info">
+                <span>Heart Rate (MAX30102)</span>
+                <h3 id="valHeartRate">72 <small>BPM</small></h3>
+                <span class="kpi-sub green"><i class="fa-solid fa-arrow-trend-up"></i> Normal resting rate</span>
+              </div>
+            </div>
+
+            <div class="kpi-card card-spo2">
+              <div class="kpi-icon"><i class="fa-solid fa-lungs"></i></div>
+              <div class="kpi-info">
+                <span>Blood Oxygen (SpO2)</span>
+                <h3 id="valSpo2">98.4 <small>%</small></h3>
+                <span class="kpi-sub green"><i class="fa-solid fa-check"></i> Optimal oxygenation</span>
+              </div>
+            </div>
+
+            <div class="kpi-card card-motion">
+              <div class="kpi-icon"><i class="fa-solid fa-person-running"></i></div>
+              <div class="kpi-info">
+                <span>Motor Activity (MPU6050)</span>
+                <h3 id="valActivity">Moderate</h3>
+                <span class="kpi-sub purple" id="valAccelSub"><i class="fa-solid fa-arrows-up-down-left-right"></i> Accel Mag 9.85 m/s²</span>
+              </div>
+            </div>
+
+            <div class="kpi-card card-gas">
+              <div class="kpi-icon"><i class="fa-solid fa-dna"></i></div>
+              <div class="kpi-info">
+                <span>Identified Phenotype</span>
+                <h3 id="valSubtypeMini" style="font-size: 19px;">Euthymic (Healthy)</h3>
+                <span class="kpi-sub blue" id="valConfidenceMini"><i class="fa-solid fa-circle-check"></i> 89% AI Confidence</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Main Row: Subtype Diagnosis Banner & Vitals Chart -->
+          <!-- SPECIAL HIGHLIGHT: CLASSIFIED DEPRESSION SUBTYPE CARD -->
+          <div class="subtype-banner-card" id="subtypeBanner">
+            <div class="subtype-banner-header">
+              <div class="subtype-badge-group">
+                <span class="type-pill" id="subtypeBadgeName">Major Depressive Episode (MDD)</span>
+                <span class="confidence-pill" id="subtypeConfidence">92% Match Probability</span>
+              </div>
+              <span class="severity-badge" id="subtypeSeverity">CLINICALLY SIGNIFICANT</span>
+            </div>
+            
+            <div class="subtype-banner-body">
+              <div class="subtype-desc-box">
+                <h4 id="subtypeTitle">Primary Diagnosis: Major Depressive Disorder (Psychomotor Retardation)</h4>
+                <p id="subtypeDescription">Marked by profound psychomotor deceleration, blunted autonomic variability (suppressed RMSSD/HRV), nocturnal insomnia, and prolonged physical immobility detected via MPU6050.</p>
+              </div>
+              <div class="subtype-markers-list" id="subtypeMarkers">
+                <span class="marker-chip"><i class="fa-solid fa-chart-line-down"></i> Severe Motor Retardation (-74%)</span>
+                <span class="marker-chip"><i class="fa-solid fa-heart-crack"></i> Autonomic Rigidity (Low HRV)</span>
+                <span class="marker-chip"><i class="fa-solid fa-moon"></i> Circadian Dysregulation</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="two-col-grid">
+            <!-- AI Depression Risk Meter & Subtype Breakdown -->
+            <div class="panel risk-panel">
+              <div class="panel-header">
+                <h3><i class="fa-solid fa-brain"></i> Depression Severity & Risk</h3>
+                <span class="status-pill pill-mod" id="riskLevelBadge">MODERATE RISK</span>
+              </div>
+
+              <div class="gauge-wrapper">
+                <div class="circular-gauge">
+                  <svg viewBox="0 0 36 36" class="circular-chart">
+                    <path class="circle-bg"
+                      d="M18 2.0845
+                        a 15.9155 15.9155 0 0 1 0 31.831
+                        a 15.9155 15.9155 0 0 1 0 -31.831"
+                    />
+                    <path id="gaugeProgress" class="circle"
+                      stroke-dasharray="48, 100"
+                      d="M18 2.0845
+                        a 15.9155 15.9155 0 0 1 0 31.831
+                        a 15.9155 15.9155 0 0 1 0 -31.831"
+                    />
+                  </svg>
+                  <div class="gauge-content">
+                    <span id="riskScoreNumber">48%</span>
+                    <small>Overall Severity</small>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Subtype Distribution Progress Bars -->
+              <div class="subtype-bars-widget">
+                <h4 style="font-size: 13px; font-weight: 600; margin-bottom: 12px; color: var(--text-secondary);">
+                  <i class="fa-solid fa-chart-simple"></i> Subtype Probability Distribution
+                </h4>
+
+                <div class="prob-row">
+                  <div class="prob-labels">
+                    <span>Major Depressive Disorder (MDD)</span>
+                    <strong id="probMDD">62%</strong>
+                  </div>
+                  <div class="bar-track"><div class="bar-fill bg-red" id="fillMDD" style="width: 62%;"></div></div>
+                </div>
+
+                <div class="prob-row">
+                  <div class="prob-labels">
+                    <span>Anxious Depression</span>
+                    <strong id="probAnxious">24%</strong>
+                  </div>
+                  <div class="bar-track"><div class="bar-fill bg-orange" id="fillAnxious" style="width: 24%;"></div></div>
+                </div>
+
+                <div class="prob-row">
+                  <div class="prob-labels">
+                    <span>Atypical Depression</span>
+                    <strong id="probAtypical">10%</strong>
+                  </div>
+                  <div class="bar-track"><div class="bar-fill bg-purple" id="fillAtypical" style="width: 10%;"></div></div>
+                </div>
+
+                <div class="prob-row">
+                  <div class="prob-labels">
+                    <span>Seasonal Affective (SAD)</span>
+                    <strong id="probSAD">4%</strong>
+                  </div>
+                  <div class="bar-track"><div class="bar-fill bg-blue" id="fillSAD" style="width: 4%;"></div></div>
+                </div>
+              </div>
+
+              <div class="ai-recommendation-box" style="margin-top: 16px;">
+                <h4><i class="fa-solid fa-stethoscope"></i> Targeted Clinical Recommendation</h4>
+                <p id="recommendationText">Symptoms align predominantly with Psychomotor Retarded MDD. Behavioral activation therapy, scheduled sunlight/light exposure, and physical kinesiology prompts are strongly recommended.</p>
+              </div>
+            </div>
+
+            <!-- Live Vitals Chart & Subtype Radar -->
+            <div class="panel chart-panel">
+              <div class="panel-header">
+                <h3><i class="fa-solid fa-chart-line"></i> Real-Time Physiological Telemetry (ESP32)</h3>
+                <div class="legend-inline">
+                  <span class="legend-pill red">Heart Rate (BPM)</span>
+                  <span class="legend-pill blue">SpO2 (%)</span>
+                </div>
+              </div>
+              <div class="chart-container">
+                <canvas id="liveVitalsChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION 2: DEPRESSION SUBTYPES CATALOG & COMPARISON -->
+        <section id="section-subtypes" class="tab-section">
+          <div class="subtypes-catalog-grid">
+            
+            <!-- Type 1: MDD (Melancholic / Retarded) -->
+            <div class="subtype-card" id="card-mdd">
+              <div class="type-icon-header">
+                <div class="icon-circle red"><i class="fa-solid fa-bed"></i></div>
+                <div>
+                  <h3>Major Depressive Disorder (MDD)</h3>
+                  <span>Melancholic / Psychomotor Retarded Subtype</span>
+                </div>
+              </div>
+              <p class="type-desc">Profound loss of pleasure, vegetative slowing, pervasive lethargy, and motor inertia.</p>
+              <div class="sensor-signature">
+                <h5>AIoT Sensor Signature:</h5>
+                <ul>
+                  <li><i class="fa-solid fa-check"></i> <strong>MPU6050:</strong> Extreme motor deceleration (&lt; 1.2 m/s² daily variance)</li>
+                  <li><i class="fa-solid fa-check"></i> <strong>MAX30102:</strong> Depressed vagal tone, rigid baseline HR</li>
+                  <li><i class="fa-solid fa-check"></i> <strong>Time of Day:</strong> Symptoms heavily pronounced in early morning hours</li>
+                </ul>
+              </div>
+              <div class="type-footer">
+                <span>DSM-5 Code: 296.22</span>
+                <span class="match-indicator" id="matchMDD">Current Match: High</span>
+              </div>
+            </div>
+
+            <!-- Type 2: Anxious Depression -->
+            <div class="subtype-card" id="card-anxious">
+              <div class="type-icon-header">
+                <div class="icon-circle orange"><i class="fa-solid fa-bolt"></i></div>
+                <div>
+                  <h3>Anxious Depression</h3>
+                  <span>Hyperarousal & Somatic Tension Subtype</span>
+                </div>
+              </div>
+              <p class="type-desc">Depression co-occurring with intense autonomic agitation, restlessness, and sympathetic overdrive.</p>
+              <div class="sensor-signature">
+                <h5>AIoT Sensor Signature:</h5>
+                <ul>
+                  <li><i class="fa-solid fa-check"></i> <strong>MAX30102:</strong> Resting tachycardia (&gt; 92 BPM) & erratic HRV drops</li>
+                  <li><i class="fa-solid fa-check"></i> <strong>MPU6050:</strong> Micro-tremors & frequent agitated postural shifts</li>
+                  <li><i class="fa-solid fa-check"></i> <strong>SpO2:</strong> Shallow hyperventilation-induced respiratory rate shifts</li>
+                </ul>
+              </div>
+              <div class="type-footer">
+                <span>DSM-5 With Anxious Distress</span>
+                <span class="match-indicator" id="matchAnxious">Current Match: Low</span>
+              </div>
+            </div>
+
+            <!-- Type 3: Atypical Depression -->
+            <div class="subtype-card" id="card-atypical">
+              <div class="type-icon-header">
+                <div class="icon-circle purple"><i class="fa-solid fa-weight-hanging"></i></div>
+                <div>
+                  <h3>Atypical Depression</h3>
+                  <span>Hypersomnic & Leaden Paralysis Subtype</span>
+                </div>
+              </div>
+              <p class="type-desc">Mood reactivity combined with prolonged hypersomnia, severe lethargy, and extreme fatigue.</p>
+              <div class="sensor-signature">
+                <h5>AIoT Sensor Signature:</h5>
+                <ul>
+                  <li><i class="fa-solid fa-check"></i> <strong>Sleep/Activity:</strong> Extended sedentary bouts (&gt; 11 hours uninterrupted)</li>
+                  <li><i class="fa-solid fa-check"></i> <strong>MAX30102:</strong> Blunted morning autonomic acceleration</li>
+                  <li><i class="fa-solid fa-check"></i> <strong>Activity Spikes:</strong> Episodic transient spikes upon positive social cues</li>
+                </ul>
+              </div>
+              <div class="type-footer">
+                <span>DSM-5 With Atypical Features</span>
+                <span class="match-indicator" id="matchAtypical">Current Match: Minimal</span>
+              </div>
+            </div>
+
+            <!-- Type 4: Seasonal Affective Disorder (SAD) -->
+            <div class="subtype-card" id="card-sad">
+              <div class="type-icon-header">
+                <div class="icon-circle blue"><i class="fa-solid fa-cloud-sun"></i></div>
+                <div>
+                  <h3>Seasonal Affective Disorder (SAD)</h3>
+                  <span>Circadian Desynchronization Subtype</span>
+                </div>
+              </div>
+              <p class="type-desc">Photoperiod-induced depressive states linked with low environmental exposure and phase-delayed sleep.</p>
+              <div class="sensor-signature">
+                <h5>AIoT Sensor Signature:</h5>
+                <ul>
+                  <li><i class="fa-solid fa-check"></i> <strong>Circadian:</strong> Delayed waking mobility onset by 2.4+ hours</li>
+                  <li><i class="fa-solid fa-check"></i> <strong>MQ135/Air:</strong> Prolonged confinement to indoor unventilated areas</li>
+                  <li><i class="fa-solid fa-check"></i> <strong>MAX30102:</strong> Evening resting heart rate dip postponement</li>
+                </ul>
+              </div>
+              <div class="type-footer">
+                <span>DSM-5 With Seasonal Pattern</span>
+                <span class="match-indicator" id="matchSAD">Current Match: Minimal</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Radar Chart Comparison -->
+          <div class="panel" style="margin-top: 24px;">
+            <div class="panel-header">
+              <h3><i class="fa-solid fa-spider"></i> Phenotype Multi-Axis Biomarker Profile</h3>
+            </div>
+            <div class="chart-container" style="height: 380px;">
+              <canvas id="radarChart"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION 3: SENSORS DETAILS -->
+        <section id="section-sensors" class="tab-section">
+          <div class="sensor-cards-grid">
+            <div class="panel">
+              <div class="panel-header">
+                <h3><i class="fa-solid fa-heart"></i> MAX30102 Pulse Oximeter</h3>
+                <span class="tag">I2C (0x57)</span>
+              </div>
+              <div class="chart-container-sm">
+                <canvas id="chartMAX"></canvas>
+              </div>
+              <div class="metric-row">
+                <div><span>Beat Average:</span> <strong>74 BPM</strong></div>
+                <div><span>Oxygen (SpO2):</span> <strong>98.6%</strong></div>
+                <div><span>Sensor Temp:</span> <strong>36.6 °C</strong></div>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header">
+                <h3><i class="fa-solid fa-arrows-spin"></i> MPU6050 Motion & Inertia</h3>
+                <span class="tag">I2C (0x68)</span>
+              </div>
+              <div class="chart-container-sm">
+                <canvas id="chartMPU"></canvas>
+              </div>
+              <div class="metric-row">
+                <div><span>Accel X, Y, Z:</span> <strong>0.1, 0.4, 9.8 g</strong></div>
+                <div><span>Gyro Rotation:</span> <strong>0.02 rad/s</strong></div>
+                <div><span>State:</span> <strong>Mobile / Active</strong></div>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header">
+                <h3><i class="fa-solid fa-smog"></i> MQ5 / MQ135 Air & Gas</h3>
+                <span class="tag">Analog (GPIO34/35)</span>
+              </div>
+              <div class="chart-container-sm">
+                <canvas id="chartGas"></canvas>
+              </div>
+              <div class="metric-row">
+                <div><span>MQ5 (LPG/Methane):</span> <strong>280 ADC</strong></div>
+                <div><span>MQ135 (Air Quality):</span> <strong>320 ADC</strong></div>
+                <div><span>Safety Index:</span> <strong>Safe (Level A)</strong></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION 4: AI EXPLAINABILITY & SHAP -->
+        <section id="section-risk" class="tab-section">
+          <div class="two-col-grid">
+            <div class="panel">
+              <div class="panel-header">
+                <h3><i class="fa-solid fa-layer-group"></i> SHAP Feature Importance & Subtype Discriminators</h3>
+              </div>
+              <p class="sub-desc">Explaining the AI predictions: Highlights features distinguishing between MDD, Anxious, and Atypical depression states.</p>
+              <div class="chart-container">
+                <canvas id="shapChart"></canvas>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header">
+                <h3><i class="fa-solid fa-timeline"></i> Longitudinal Subtype Evolution (7 Days)</h3>
+              </div>
+              <p class="sub-desc">Tracks transitions between acute anxious agitation and prolonged psychomotor depression.</p>
+              <div class="chart-container">
+                <canvas id="riskHistoryChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION 5: SENSOR BENCH & SUBTYPE SIMULATION -->
+        <section id="section-bench" class="tab-section">
+          <div class="panel">
+            <div class="panel-header">
+              <h3><i class="fa-solid fa-sliders"></i> Interactive Subtype Diagnosis Simulator</h3>
+              <span class="status-pill pill-purple">Real-Time Classification Engine</span>
+            </div>
+            <p class="sub-desc">Click a preset below or adjust sensor sliders to see the AI dynamically detect and classify the <strong>exact depression subtype</strong>!</p>
+
+            <div class="scenario-presets" style="margin-top: 0; padding-top: 0; border: none; margin-bottom: 24px;">
+              <h4 style="margin-bottom: 12px; font-weight: 700; color: #fff;">Simulate Specific Depression Phenotypes:</h4>
+              <div class="presets-row">
+                <button class="btn-preset" data-preset="healthy">🟢 Healthy (Euthymic State)</button>
+                <button class="btn-preset active" data-preset="mdd">🔴 Major Depressive Disorder (Retarded)</button>
+                <button class="btn-preset" data-preset="anxious">🟠 Anxious Depression (Agitated)</button>
+                <button class="btn-preset" data-preset="atypical">🟣 Atypical Depression (Hypersomnia)</button>
+                <button class="btn-preset" data-preset="sad">🔵 Seasonal Affective Disorder (Circadian)</button>
+              </div>
+            </div>
+
+            <div class="bench-grid">
+              <div class="bench-control">
+                <label>
+                  <span>Heart Rate (MAX30102)</span>
+                  <strong id="labelHR">72 BPM</strong>
+                </label>
+                <input type="range" id="sliderHR" min="40" max="140" value="72">
+              </div>
+
+              <div class="bench-control">
+                <label>
+                  <span>Blood Oxygen SpO2</span>
+                  <strong id="labelSpo2">98 %</strong>
+                </label>
+                <input type="range" id="sliderSpo2" min="85" max="100" value="98">
+              </div>
+
+              <div class="bench-control">
+                <label>
+                  <span>Physical Activity Index (MPU6050)</span>
+                  <strong id="labelActivity">6 / 10</strong>
+                </label>
+                <input type="range" id="sliderActivity" min="0" max="10" value="6">
+              </div>
+
+              <div class="bench-control">
+                <label>
+                  <span>Tremor / Micro-Motion Level</span>
+                  <strong id="labelTremor">1.5 / 10</strong>
+                </label>
+                <input type="range" id="sliderTremor" min="0" max="10" value="2">
+              </div>
+            </div>
+
+            <!-- Live Diagnostic Output Box -->
+            <div class="live-diagnostic-output">
+              <div class="diag-header">
+                <h4><i class="fa-solid fa-microscope"></i> Live Diagnostic Classification Output:</h4>
+                <span class="status-pill pill-high" id="simOutputBadge">MDD DETECTED</span>
+              </div>
+              <div class="diag-content">
+                <p><strong>Predicted Phenotype:</strong> <span id="simOutputName">Major Depressive Disorder (Melancholic)</span></p>
+                <p><strong>Primary Physiological Trigger:</strong> <span id="simOutputTrigger">Profound psychomotor deceleration (&lt;1.5 activity) with flattened autonomic response.</span></p>
+                <p><strong>Clinical Protocol:</strong> <span id="simOutputAction">Immediate behavioral activation protocol & clinical consultation.</span></p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECTION 6: ALERTS -->
+        <section id="section-alerts" class="tab-section">
+          <div class="panel">
+            <div class="panel-header">
+              <h3><i class="fa-solid fa-triangle-exclamation"></i> Health & Subtype Clinical Alerts</h3>
+              <button class="btn-sm" id="btnClearAlerts">Clear All Read</button>
+            </div>
+            <div class="alerts-list" id="alertsList">
+              <div class="alert-item danger">
+                <div class="alert-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                <div class="alert-details">
+                  <h4>Major Depressive Subtype Flags Activated</h4>
+                  <p>Inactivity duration exceeded critical threshold with blunted heart rate variability across 48h.</p>
+                  <small>Today, 18:30 • Source: AI Subtype Classification Engine</small>
+                </div>
+                <span class="alert-tag">High Severity</span>
+              </div>
+
+              <div class="alert-item warning">
+                <div class="alert-icon"><i class="fa-solid fa-circle-exclamation"></i></div>
+                <div class="alert-details">
+                  <h4>Sympathetic Agitation Episode (Anxious Signs)</h4>
+                  <p>Tachycardia combined with sudden high-frequency micro-tremors detected via MPU6050.</p>
+                  <small>Today, 14:22 • Source: MPU6050 Motion Sensor</small>
+                </div>
+                <span class="alert-tag">Moderate</span>
+              </div>
+
+              <div class="alert-item info">
+                <div class="alert-icon"><i class="fa-solid fa-circle-info"></i></div>
+                <div class="alert-details">
+                  <h4>ESP32 Node Synced</h4>
+                  <p>Sensor telemetry channel connected and streaming at 5-second sampling rate.</p>
+                  <small>Today, 09:15 • Source: MQTT Broker</small>
+                </div>
+                <span class="alert-tag">System</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

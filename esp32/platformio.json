@@ -1,0 +1,19 @@
+{
+  "name": "AIoT Depression Monitor - ESP32",
+  "version": "1.0.0",
+  "description": "ESP32 firmware for AIoT-Based Depression Early Risk Monitoring System",
+  "frameworks": ["arduino"],
+  "platform": "espressif32",
+  "board": "esp32dev",
+  "lib_deps": [
+    "knolleary/PubSubClient@^2.8",
+    "bblanchon/ArduinoJson@^6.21.0",
+    "sparkfun/SparkFun MAX3010x Pulse and Proximity Sensor Library@^1.1.2",
+    "adafruit/Adafruit MPU6050@^2.2.4",
+    "adafruit/Adafruit Unified Sensor@^1.1.9"
+  ],
+  "monitor_speed": 115200,
+  "build_flags": [
+    "-DCORE_DEBUG_LEVEL=3"
+  ]
+}
