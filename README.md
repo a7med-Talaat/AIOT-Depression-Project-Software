@@ -275,19 +275,6 @@ NEXT_PUBLIC_APP_NAME=AIoT Depression Monitor
 
 ---
 
-## 👥 Team Responsibilities
-
-| # | Member | Task | Status |
-|---|--------|------|--------|
-| 1 | Mohammad | Web Development (Frontend) | ✅ Done |
-| 2 | Yousuf | Active Scenario & Sensor Dashboard | ✅ Done |
-| 3 | Nabih | Heart Rate Sensor (MAX30102) | ✅ Done |
-| 4 | Nireen | Circuit Simulation (PCP) | 🔲 Hardware |
-| 5 | Fatma | Gas Sensors (MQ5 & MQ135) | ✅ Done |
-| 6 | Aya | Sensors Integration (MPU6050 + MAX30102) | ✅ Done |
-
----
-
 ## 🛠️ Tech Stack
 
 | Layer | Technologies |
